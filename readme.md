@@ -1,20 +1,23 @@
 # FisheyeToEquirectangular
 
-Scripts for converting pairs of Hikvision fisheye videos to equirectangular videos.
+Scripts for converting pairs of Hikvision fisheye videos to equirectangular videos. This code has been tested on Mac and Linux.
 
 # Install
 
-First install [Anaconda](https://www.anaconda.com/distribution/). Then ffmpeg, OpenCV, and a few Python libraries.
+First install [Anaconda](https://www.anaconda.com/distribution/). Then ffmpeg, OpenCV, and a few Python libraries. OpenCV installed by Anaconda needs Python 3.6.
 
 ```
 $ conda create -n py36 python=3.6
 $ conda activate py36
 $ conda install opencv
-$ conda install x264=='1!152.20180717' ffmpeg=4.0.2 -c conda-forge
 $ pip3 install tqdm ffmpeg-python python-dateutil pillow
 ```
 
-By default `opencv` include
+By default `opencv` includes a version of ffmpeg that does not have `libx264` enabled, so you will need to install a different version:
+
+```
+$ conda install x264=='1!152.20180717' ffmpeg=4.0.2 -c conda-forge
+```
 
 Now you need this code and some Python utils:
 
@@ -45,10 +48,11 @@ Extract from 6/26/2019 18:23:00:
   -l EXPORT/ch03_20190626181035.mp4 --skip_left 17880 -r EXPORT/ch04_20190626181114.mp4 --skip_right 16944
 ```
 
-These parameters can be pasted into the unwarper:
+These parameters can be pasted into the unwarper. Before using the unwarper make sure to enable the Python 3.6 environment with OpenCV.
 
 ```
-python unwarp.py \
+$ conda activate py36
+$ python unwarp.py \
     -o out.mp4 \
     -l EXPORT/ch03_20190626181035.mp4 --skip_left 936 \
     -r EXPORT/ch04_20190626181114.mp4 --skip_right 0 \
