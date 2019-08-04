@@ -1,5 +1,7 @@
 # FisheyeToEquirectangular
 
+![](preview.jpg)
+
 Scripts for converting pairs of Hikvision fisheye videos to equirectangular videos. This code has been tested on Mac and Linux.
 
 # Install
