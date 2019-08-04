@@ -46,7 +46,7 @@ def get_input_process(fn, width, height, fps, target_width, target_height, targe
     )
     return process
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(
         epilog='Usage: python unwarp.py -l ch01.mp4 -r ch02.mp4 -d 10 -o warped.mp4'
     )
@@ -242,5 +242,9 @@ if __name__ == '__main__':
     if os.path.exists(args.tmp_folder):
         shutil.rmtree(args.tmp_folder)
 
-    # https://github.com/kkroening/ffmpeg-python/issues/108
-    subprocess.run(['stty', 'echo'])
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        # https://github.com/kkroening/ffmpeg-python/issues/108
+        subprocess.run(['stty', 'echo'])
