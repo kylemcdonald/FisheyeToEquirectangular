@@ -7,14 +7,14 @@ Scripts for converting pairs of Hikvision fisheye videos to equirectangular vide
 First install [Anaconda](https://www.anaconda.com/distribution/). Then ffmpeg, OpenCV, and a few Python libraries.
 
 ```
-$ brew install ffmpeg
 $ conda create -n py36 python=3.6
 $ conda activate py36
 $ conda install opencv
+$ conda install x264=='1!152.20180717' ffmpeg=4.0.2 -c conda-forge
 $ pip3 install tqdm ffmpeg-python python-dateutil pillow
 ```
 
-To use the `libx264` encoder you may need to [install ffmpeg from source](https://trac.ffmpeg.org/wiki/CompilationGuide).
+By default `opencv` include
 
 Now you need this code and some Python utils:
 
