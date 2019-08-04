@@ -2,6 +2,7 @@ import os
 import argparse
 import shutil
 import subprocess
+import errno
 
 import ffmpeg
 import numpy as np
@@ -27,6 +28,8 @@ def print_meta(fn, meta):
         print(f'  {key}: {meta[key]}')
 
 def get_meta(fn):
+    if not os.path.exists(fn):
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), fn)
     return ffmpeg.probe(fn)['streams'][0]
 
 def get_input_process(fn, width, height, fps, target_width, target_height, target_fps, vframes):
