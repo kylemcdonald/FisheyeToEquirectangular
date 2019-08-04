@@ -8,18 +8,31 @@ Install ffmpeg, OpenCV, and a few Python libraries.
 
 ```
 $ brew install ffmpeg
-$ brew install python3
-$ brew tap homebrew/science
-$ brew install opencv3 --with-contrib --with-python3
-$ pip3 install numpy tqdm ffmpeg-python
+$ # install [Anaconda](https://www.anaconda.com/distribution/)
+$ conda create -n py36 python=3.6
+$ conda activate py36
+$ conda install opencv
+$ pip3 install tqdm ffmpeg-python ffmpeg-python python-dateutil pillow
 ```
 
-This might be easier with [Anaconda](https://www.anaconda.com/distribution/) which comes with Python3 and numpy already.
-
-You also need some Python utils:
+Now you need this code and some Python utils:
 
 ```
+$ git clone git@github.com:kylemcdonald/FisheyeToEquirectangular.git
+$ cd FisheyeToEquirectangular
 $ git clone git@github.com:kylemcdonald/python-utils.git utils
+```
+
+We'll also create an alias to our drive with the footage to keep things simple:
+
+```
+$ ln -s /Volumes/EXPORT EXPORT
+```
+
+Or on Linux:
+
+```
+$ ln -s /media/kyle/EXPORT EXPORT
 ```
 
 # Usage
