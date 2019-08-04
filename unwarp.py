@@ -122,8 +122,7 @@ def main():
         .run_async(pipe_stdin=True)
     )
 
-    left_byte_count = left_width * left_height * 3
-    right_byte_count = right_width * right_height * 3
+    byte_count = input_width * input_height * 3
 
     unwarp = FisheyeToEquirectangular(args.height, input_width, args.blending)
 
@@ -132,16 +131,16 @@ def main():
     skip_max = max(args.skip_left, args.skip_right)
     for i in tqdm(range(skip_max)):
         if i < args.skip_left:
-            left_process.stdout.read(left_byte_count)
+            left_process.stdout.read(byte_count)
         if i < args.skip_right:
-            right_process.stdout.read(right_byte_count)
+            right_process.stdout.read(byte_count)
 
     if args.verbose:
         print(f'Warping frames: {n_frames}')
 
     for i in tqdm(range(n_frames)):
-        left_bytes = left_process.stdout.read(left_byte_count)
-        right_bytes = right_process.stdout.read(right_byte_count)
+        left_bytes = left_process.stdout.read(byte_count)
+        right_bytes = right_process.stdout.read(byte_count)
 
         if not left_bytes:
             if args.verbose:
@@ -156,13 +155,13 @@ def main():
         left_frame = (
             np
             .frombuffer(left_bytes, np.uint8)
-            .reshape([left_height, left_width, 3])
+            .reshape([input_height, input_width, 3])
         )
         
         right_frame = (
             np
             .frombuffer(right_bytes, np.uint8)
-            .reshape([right_height, right_width, 3])
+            .reshape([input_height, input_width, 3])
         )
         
         if args.fisheye:
@@ -179,9 +178,15 @@ def main():
             .tobytes()
         )
 
+    if args.verbose:
+        print('Closing all processes...')
+    left_process.stdout.close()
+    right_process.stdout.close()
+    out_process.stdin.close()
+    if args.verbose:
+        print('Waiting for all processes to finish...')
     left_process.wait()
     right_process.wait()
-    out_process.stdin.close()
     out_process.wait()
 
     for fn in [args.left_video, args.right_video]:
@@ -249,5 +254,7 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
+        pass
+    finally:
         # https://github.com/kkroening/ffmpeg-python/issues/108
         subprocess.run(['stty', 'echo'])
