@@ -22,20 +22,29 @@ def get_tmp_video(tmp_folder, fn):
     return os.path.join(tmp_folder, basename)
 
 def print_meta(fn, meta):
+    video_stream = get_stream(meta, 'video')
+    audio_stream = get_stream(meta, 'audio')
     print(fn)
-    print(f'  {meta["width"]}x{meta["height"]} @ {meta["avg_frame_rate"]}')
+    print(f'  video: {video_stream["width"]}x{video_stream["height"]} @ {video_stream["avg_frame_rate"]}')
+    print('  audio: ' + ('yes' if audio_stream else 'no'))
     for key in 'duration start_time'.split(' '):
-        print(f'  {key}: {meta[key]}')
+        print(f'  {key}: {video_stream[key]}')
 
 def get_meta(fn):
     if not os.path.exists(fn):
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), fn)
-    return ffmpeg.probe(fn)['streams'][0]
+    return ffmpeg.probe(fn)
+
+def get_stream(meta, codec_type):
+    for stream in meta['streams']:
+        if stream['codec_type'] == codec_type:
+            return stream
+    return None
 
 def get_input_process(fn, width, height, fps, target_width, target_height, target_fps, vframes):
     process = ffmpeg.input(fn)
-    if fps != target_fps:
-        process = process.filter('fps', fps=24)
+    if fps != f'{target_fps}/1':
+        process = process.filter('fps', fps=target_fps)
     if width != target_width or height != target_height:
         process = process.filter('scale', target_width, target_height)
     extra = {}
@@ -87,30 +96,31 @@ def main():
     args = parser.parse_args()
 
     left_meta = get_meta(args.left_video)
-    left_width, left_height = left_meta['width'], left_meta['height']
-    left_fps = left_meta['avg_frame_rate']
+    left_video_stream = get_stream(left_meta, 'video')
+    left_width, left_height = left_video_stream['width'], left_video_stream['height']
+    left_fps = left_video_stream['avg_frame_rate']
 
     right_meta = get_meta(args.right_video)
-    right_width, right_height = right_meta['width'], right_meta['height']
-    right_fps = right_meta['avg_frame_rate']
+    right_video_stream = get_stream(right_meta, 'video')
+    right_width, right_height = right_video_stream['width'], right_video_stream['height']
+    right_fps = right_video_stream['avg_frame_rate']
 
     if args.verbose:
         print_meta(args.left_video, left_meta)
         print_meta(args.right_video, right_meta)
 
     n_frames = int(args.frame_rate * args.duration) if args.duration else None
-    target_fps = f'{args.frame_rate}/1'
     input_width = max(left_width, right_width)
     input_height = max(left_height, right_height)
 
     left_process = get_input_process(args.left_video,
         left_width, left_height, left_fps,
-        input_width, input_height, target_fps,
+        input_width, input_height, args.frame_rate,
         args.skip_left + n_frames if n_frames else None)
     
     right_process = get_input_process(args.right_video,
         right_width, right_height, right_fps,
-        input_width, input_height, target_fps,
+        input_width, input_height, args.frame_rate,
         args.skip_right + n_frames if n_frames else None)
 
     out_process = (
@@ -189,7 +199,16 @@ def main():
     right_process.wait()
     out_process.wait()
 
-    for fn in [args.left_video, args.right_video]:
+    filenames = [args.left_video, args.right_video]
+    metas = [left_meta, right_meta]
+    skips = [args.skip_left, args.skip_right]
+    in_audio = []
+    for fn, meta, skip in zip(filenames, metas, skips):
+        if not get_stream(meta, 'audio'):
+            if args.verbose:
+                print('No audio from', fn)
+            continue
+
         tmp_fn = get_tmp_audio(args.tmp_folder, fn)
         if args.verbose:
             print('Re-encoding audio from', fn, 'to', tmp_fn)
@@ -202,44 +221,46 @@ def main():
             .run()
         )
 
-    skip_left_seconds = args.skip_left / args.frame_rate
-    skip_right_seconds = args.skip_right / args.frame_rate
-
-    left_tmp = get_tmp_audio(args.tmp_folder, args.left_video)
-    in_audio_left = (
-        ffmpeg
-        .input(left_tmp)
-        .filter('atrim', start=skip_left_seconds)
-        .filter('asetpts', 'PTS-STARTPTS')
-    )
-
-    right_tmp = get_tmp_audio(args.tmp_folder, args.right_video)
-    in_audio_right = (
-        ffmpeg
-        .input(right_tmp)
-        .filter('atrim', start=skip_right_seconds)
-        .filter('asetpts', 'PTS-STARTPTS')
-    )
+        skip_seconds = skip / args.frame_rate
+        in_audio.append(
+            ffmpeg
+            .input(tmp_fn)
+            .filter('atrim', start=skip_seconds)
+            .filter('asetpts', 'PTS-STARTPTS')
+        )
 
     video_tmp = get_tmp_video(args.tmp_folder, args.output)
     in_video = ffmpeg.input(video_tmp)
 
-    if args.verbose:
-        print('Merging input:')
-        print('  ', left_tmp)
-        print('  ', right_tmp)
-        print('  ', video_tmp)
-        print('Output:')
-        print('  ', args.output)
-        
-    (
-        ffmpeg
-        .filter((in_audio_left, in_audio_right), 'join', inputs=2, channel_layout='stereo')
-        .output(in_video.video, args.output, shortest=None, vcodec='copy')
-        .global_args('-hide_banner', '-nostats', '-loglevel', 'panic')
-        .overwrite_output()
-        .run()
-    )
+    if len(in_audio) == 0:
+        if args.verbose:
+            print('No audio channels, using video directly.')
+        shutil.copy(video_tmp, args.output)
+
+    if len(in_audio) == 1:
+        if args.verbose:
+            print('Merging video and single audio channel into', args.output)
+            
+        (
+            ffmpeg
+            .output(in_video.video, in_audio[0], args.output, shortest=None, vcodec='copy')
+            .global_args('-hide_banner', '-nostats', '-loglevel', 'panic')
+            .overwrite_output()
+            .run()
+        )
+
+    if len(in_audio) == 2:
+        if args.verbose:
+            print('Merging video and two audio channels into', args.output)
+            
+        (
+            ffmpeg
+            .filter(in_audio, 'join', inputs=2, channel_layout='stereo')
+            .output(in_video.video, args.output, shortest=None, vcodec='copy')
+            .global_args('-hide_banner', '-nostats', '-loglevel', 'panic')
+            .overwrite_output()
+            .run()
+        )
 
     if args.verbose:
         print('Finished encoding')
