@@ -1,7 +1,6 @@
 import os
 import argparse
 import shutil
-import subprocess
 import errno
 
 import ffmpeg
@@ -109,19 +108,33 @@ def main():
         print_meta(args.left_video, left_meta)
         print_meta(args.right_video, right_meta)
 
-    n_frames = int(args.frame_rate * args.duration) if args.duration else None
+    left_duration = float(left_video_stream['duration']) - args.skip_left / args.frame_rate
+    right_duration = float(right_video_stream['duration']) - args.skip_right / args.frame_rate
+    max_duration = min(left_duration, right_duration)
+    
+    if args.duration is None:
+        if args.verbose:
+            print(f'No duration specified. Using maximum duration {max_duration} seconds')
+        args.duration = max_duration
+
+    if args.duration > max_duration:
+        if args.verbose:
+            print(f'Duration {args.duration} seconds is too long, using maximum duration {max_duration} seconds')
+        args.duration = max_duration
+
+    n_frames = int(args.frame_rate * args.duration)
     input_width = max(left_width, right_width)
     input_height = max(left_height, right_height)
 
     left_process = get_input_process(args.left_video,
         left_width, left_height, left_fps,
         input_width, input_height, args.frame_rate,
-        args.skip_left + n_frames if n_frames else None)
+        args.skip_left + n_frames)
     
     right_process = get_input_process(args.right_video,
         right_width, right_height, right_fps,
         input_width, input_height, args.frame_rate,
-        args.skip_right + n_frames if n_frames else None)
+        args.skip_right + n_frames)
 
     out_process = (
         ffmpeg
@@ -136,13 +149,16 @@ def main():
 
     unwarp = FisheyeToEquirectangular(args.height, input_width, args.blending)
 
-    if args.verbose:
-        print(f'Skipping frames: left {args.skip_left} / right {args.skip_right}')
-    skip_max = max(args.skip_left, args.skip_right)
-    for i in tqdm(range(skip_max)):
-        if i < args.skip_left:
+    if args.skip_left:
+        if args.verbose:
+            print(f'Skipping left frames: {args.skip_left}')
+        for i in tqdm(range(args.skip_left)):
             left_process.stdout.read(byte_count)
-        if i < args.skip_right:
+
+    if args.skip_right:
+        if args.verbose:
+            print(f'Skipping right frames: {args.skip_right}')
+        for i in tqdm(range(args.skip_right)):
             right_process.stdout.read(byte_count)
 
     if args.verbose:
@@ -278,4 +294,4 @@ if __name__ == '__main__':
         pass
     finally:
         # https://github.com/kkroening/ffmpeg-python/issues/108
-        subprocess.run(['stty', 'echo'])
+        os.system('stty echo')
