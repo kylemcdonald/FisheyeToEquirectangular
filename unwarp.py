@@ -81,7 +81,9 @@ def main():
     parser.add_argument('--aperture', type=float,
         help='Ratio of the camera FOV to image size', default=1)
     parser.add_argument('--preset', type=str,
-        help='ffmpeg output video codec preset', default='ultrafast')
+        help='ffmpeg output video codec preset', default='medium')
+    parser.add_argument('--crf', type=int,
+        help='ffmpeg output video codec crf (0 best to 51 worst, 17-28 is good range, default 23)', default=23)
     parser.add_argument('-d', '--duration', type=float,
         help='Duration in seconds, uses entire video if ommitted')
     parser.add_argument('--vcodec', type=str,
@@ -141,7 +143,11 @@ def main():
     out_process = (
         ffmpeg
         .input('pipe:', format='rawvideo', pix_fmt='rgb24', s=f'{args.height*2}x{args.height}')
-        .output(get_tmp_video(args.tmp_folder, args.output), preset=args.preset, pix_fmt='yuv420p', vcodec=args.vcodec)
+        .output(get_tmp_video(args.tmp_folder, args.output),
+            preset=args.preset,
+            crf=args.crf,
+            pix_fmt='yuv420p',
+            vcodec=args.vcodec)
         .global_args('-hide_banner', '-nostats', '-loglevel', 'panic')
         .overwrite_output()
         .run_async(pipe_stdin=True)
