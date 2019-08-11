@@ -8,7 +8,7 @@ import numpy as np
 from tqdm import tqdm
 
 from fisheye import FisheyeToEquirectangular
-from utils.imutil import imresize
+from utils.imutil import imresize, imwrite
 
 def get_tmp_audio(tmp_folder, fn):
     os.makedirs(tmp_folder, exist_ok=True)
@@ -90,6 +90,8 @@ def main():
         help='Output raw fisheye pair, do not unwarp')
     parser.add_argument('--tmp_folder', type=str,
         help='Location of temp folder.', default='.tmp')
+    parser.add_argument('--preview', action='store_true',
+        help='Save a .png of the first frame for reference.')
     parser.add_argument('-v', '--verbose', action='store_true')
 
     args = parser.parse_args()
@@ -203,6 +205,11 @@ def main():
             .astype(np.uint8)
             .tobytes()
         )
+
+        if args.preview and i == 0:
+            if args.verbose:
+                print('Saving preview frame...')
+            imwrite(args.output + '.png', out_frame)
 
     if args.verbose:
         print('Closing all processes...')
