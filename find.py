@@ -56,18 +56,39 @@ for prefix in prefixed:
 
 if len(prefixed) == 2:
 
+    # output file construction
+    pref = 'ch'
+    for side, skip, fn in zip(['left', 'right'], skips, filenames):
+        pref += fn[10]
+    pref = 'unwarp/'+pref + '_'
+
+    # beginning of file
     print('Extract near beginning of files:')
     smaller = min(*skips)
-    out = []
+    out = ['python unwarp.py']
+
     for side, skip, fn in zip(['left', 'right'], skips, filenames):
         out.append(f'-{side[0]} {fn}')
         out.append(f'--skip_{side} {skip - smaller}')
+        name = fn
+    name = name.replace(':', '')
+    name = name.replace(' ', '')
+    
+    out.append(f'-o {pref}{name}')
     print('  ' + ' '.join(out))
 
+    # starting timestamp
     print(f'Extract from {args.timestamp}:')
     smaller = min(*skips)
-    out = []
+    out = ['python unwarp.py']
+    name = str(target).replace('-', '')
+    name = name.replace(':', '')
+    name = name.replace(' ', '')
+
     for side, skip, fn in zip(['left', 'right'], skips, filenames):
         out.append(f'-{side[0]} {fn}')
         out.append(f'--skip_{side} {skip}')
+    out.append(f'-o {pref}{name}.mp4')
     print('  ' + ' '.join(out))
+
+
