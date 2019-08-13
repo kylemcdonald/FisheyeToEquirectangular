@@ -17,3 +17,4 @@ Instructions:
     For example: "-d 60" would give one minute clip.
 6. unwarp process is currently set at slowest/least compressed.
     To see all options you can tweak, type: "python unwarp.py -h"
+7. To cancel type: CTRL+C
