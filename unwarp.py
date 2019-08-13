@@ -81,9 +81,9 @@ def main():
     parser.add_argument('--aperture', type=float,
         help='Ratio of the camera FOV to image size', default=1)
     parser.add_argument('--preset', type=str,
-        help='ffmpeg output video codec preset', default='medium')
+        help='ffmpeg output video codec preset', default='veryslow')
     parser.add_argument('--crf', type=int,
-        help='ffmpeg output video codec crf (0 best to 51 worst, 17-28 is good range, default 23)', default=23)
+        help='ffmpeg output video codec crf (0 best to 51 worst, 17-28 is good range, default 17)', default=17)
     parser.add_argument('-d', '--duration', type=float,
         help='Duration in seconds, uses entire video if ommitted')
     parser.add_argument('--vcodec', type=str,
