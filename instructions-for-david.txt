@@ -1,0 +1,19 @@
+Instructions:
+
+1. Open "Anaconda Powershell Prompt (Anaconda 3)" from the Search bar
+    This is the command line tool you will work in.
+2. Type: cd e:\FisheyeToEquirectangular\
+    This will move you to the correct directory.
+3. Type: conda activate py36
+    This will start python. You should see (py36) replace (base) at start of prompt line.
+4. Type: python find.py -i ..\FOOTAGE\ -t "6/26/2019 18:23:00" -c 3 4
+    Replace string in quotes with desired timestamp to search.
+    Replace 3 4 with camera pair.
+5. It will print out two commands, copy and paste either one into the prompt and the process will begin.
+    The first command starts from beginning of clip.
+    The second command starts from desired timestamp.
+    By default, it will export through end of file.
+    If you want to export a limited duration add "-d [seconds]" to end of comand.
+    For example: "-d 60" would give one minute clip.
+6. unwarp process is currently set at slowest/least compressed.
+    To see all options you can tweak, type: "python unwarp.py -h"
